@@ -20,7 +20,7 @@ export default function Home() {
       <pre style={{ background: '#f4f4f4', padding: 16, borderRadius: 8 }}>
 {`{
   "chunk_size": 512,
-  "overlap_ratio": 0.2,
+  "overlap_ratio": 0.18,
   "top_k": 9
 }`}
       </pre>
