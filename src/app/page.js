@@ -21,7 +21,7 @@ export default function Home() {
 {`{
   "chunk_size": 512,
   "overlap_ratio": 0.2,
-  "top_k": 8
+  "top_k": 9
 }`}
       </pre>
     </main>
