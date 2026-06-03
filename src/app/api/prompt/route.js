@@ -4,10 +4,7 @@ import OpenAI from 'openai'
 // ── Config ────────────────────────────────────────────────────────
 const EMBEDDING_MODEL = '4UHRUIN-text-embedding-3-small'
 const CHAT_MODEL      = '4UHRUIN-gpt-5-mini'
-const TOP_K           = 8    // distinct articles to return after deduplication
-const FETCH_K         = 40   // chunks fetched from Pinecone before deduplication
-                              // needs to be much larger than TOP_K to guarantee
-                              // enough distinct articles even if top chunks cluster
+const TOP_K           = 9    // number of chunks to fetch and return
 
 // ── Required system prompt (from assignment spec) ─────────────────
 const SYSTEM_PROMPT = `You are a Medium-article assistant that answers questions strictly and only \
@@ -41,10 +38,7 @@ async function getPineconeIndex() {
 }
 
 // ── Step 1: Retrieve ──────────────────────────────────────────────
-// Fetches FETCH_K chunks from Pinecone, then deduplicates to TOP_K
-// distinct articles — keeping the best-scoring chunk per article.
-// This guarantees we can return up to TOP_K different articles even
-// when the highest-scoring chunks all belong to the same 1-2 articles.
+// Fetches TOP_K chunks directly from Pinecone without deduplication.
 async function retrieve(question) {
   const client = getOpenAI()
   const index  = await getPineconeIndex()
@@ -56,32 +50,15 @@ async function retrieve(question) {
   })
   const qVector = embeddingRes.data[0].embedding
 
-  // Fetch many chunks — cast a wide net before deduplication
+  // Fetch exactly TOP_K chunks
   const results = await index.query({
     vector:          qVector,
-    topK:            FETCH_K,
+    topK:            TOP_K,
     includeMetadata: true,
   })
 
-  // Deduplicate: keep only the highest-scoring chunk per article.
-  // Since Pinecone returns results sorted by score descending,
-  // the first time we see an article_id it is always its best chunk.
-  const seenArticles = new Set()
-  const deduplicated = []
-
-  for (const match of results.matches) {
-    const articleId = match.metadata?.article_id
-    if (!articleId) continue
-    if (seenArticles.has(articleId)) continue
-
-    seenArticles.add(articleId)
-    deduplicated.push(match)
-
-    // Stop once we have enough distinct articles
-    if (deduplicated.length >= TOP_K) break
-  }
-
-  return deduplicated
+  // Return direct matches
+  return results.matches || []
 }
 
 // ── Step 2: Build augmented user prompt ──────────────────────────
