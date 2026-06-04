@@ -83,7 +83,6 @@ async function generate(userPrompt) {
 
   const completion = await client.chat.completions.create({
     model:      CHAT_MODEL,
-    max_tokens: 5000,   // high enough for reasoning model's internal thinking + output
     messages: [
       { role: 'system', content: SYSTEM_PROMPT },
       { role: 'user',   content: userPrompt    },
